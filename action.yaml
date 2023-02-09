@@ -1,0 +1,73 @@
+name: Trigger Source Operations
+description: 'Runs the source operations toolkit to trigger a source operation update'
+inputs:
+  github_token:  # owner of the repo
+    description: 'Github personal access token with access rights to the target repository so we can work with the github api. **REQUIRED**.'
+    required: true
+  platformsh_token:
+    description: 'Platform.sh API Token. Needed to trigger the source operation.'
+    required: true
+
+#env:
+#  PLATFORMSH_CLI_TOKEN: ${{ secrets.TEMPLATES_CLI_TOKEN }}
+#  GITHUB_TOKEN: ${{ secrets.TEMPLATES_GITHUB_TOKEN }}
+#  GH_TOKEN:
+# We need to
+# 1. set up python since the source-op toolkit is written in Python
+# 2. Set up the platform.sh cli tool. Yes, we're still using the php install method
+# 3. Set up the environmental variables
+runs:
+  using: "composite"
+  steps:
+      - name: 'Setup Python'
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: 'Setup Environmental Variables'
+        shell: bash
+        run: |
+          echo "PLATFORMSH_CLI_TOKEN=${{inputs.platformsh_token}}" >> $GITHUB_ENV
+          # in a workflow you need GITHUB_TOKEN, but I think you have to have GH_TOKEN in an action?
+          echo "GH_TOKEN=${{inputs.github_token}}" >> $GITHUB_ENV
+          echo "GITHUB_TOKEN=${{inputs.github_token}}" >> $GITHUB_ENV
+
+      - name: "Install PSH CLI tool"
+        run: |
+          curl -fsS https://platform.sh/cli/installer | php
+          # for some reason, sourcing our .bashrc file does not successfully prepend our path to PATH
+          # export PATH="${HOME}/.platformsh/bin:${PATH}"
+          echo "PATH=${HOME}/.platformsh/bin:${PATH}" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v3
+
+      - name: 'Get project ID'
+        run: |
+          # grab the array entries where config.url contain 'platform.sh' then map back to an array. if our
+          # array length is 1, return the entry for config.url, otherwise return error
+          integrationURL=$(gh api "/repos/${{ github.repository }}/hooks" | jq 'map(select(.config.url | contains("platform.sh"))) | if . | length == 1 then .[0].config.url else "error" end')
+          if [[ "error" == "${integrationURL}" ]]; then
+              echo "::error::Either more than one webhook, or zero webhooks were returned. I was expecting just one."
+              exit 1
+          fi
+
+          projIDpttrn='\/projects\/([^\/]+)\/integrations'
+          if [[ "${integrationURL}" =~ ${projIDpttrn} ]]; then
+               echo "PLATFORM_PROJECT=${BASH_REMATCH[1]}" >> $GITHUB_ENV
+               echo "::notice::Project ID is ${BASH_REMATCH[1]}"
+               #echo "::set-output name=projectID::${BASH_REMATCH[1]}"
+          else
+              echo "::error::We were unable to extract the project ID from the integration url of ${integrationURL}"
+              exit 1
+          fi
+
+      - name: 'Run SourceOp Tools'
+        run: |
+          if [[ "${PATH}" != *".platformsh"* ]]; then
+            echo "psh installer not in PATH"
+            export PATH="${HOME}/.platformsh/bin:${PATH}"
+          fi
+          printf "Beginning Source Operations toolkit install...\n"
+
+          curl -fsS https://raw.githubusercontent.com/platformsh/source-operations/main/setup.sh | { bash /dev/fd/3 trigger-sopupdate; } 3<&0
+
