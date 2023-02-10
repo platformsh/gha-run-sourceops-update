@@ -24,6 +24,6 @@ jobs:
           id: run-source-op
           uses: platformsh/gha-run-sourceops-update@main
           with:
-            github_token: ${{ secrets.TEMPLATES_CLI_TOKEN }}
+            github_token: ${{ secrets.TEMPLATES_GITHUB_TOKEN }}
             platformsh_token: ${{ secrets.TEMPLATES_CLI_TOKEN }}
 ```
