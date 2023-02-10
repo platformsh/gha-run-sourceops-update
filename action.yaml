@@ -44,7 +44,7 @@ runs:
         uses: actions/checkout@v3
 
       - name: 'Get project ID'
-        uses: platformsh/gha-retrieve-projectid
+        uses: platformsh/gha-retrieve-projectid@main
         with:
           github_token: ${{ inputs.github_token }}
 
