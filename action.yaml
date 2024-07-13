@@ -56,10 +56,6 @@ runs:
             export PATH="${HOME}/.platformsh/bin:${PATH}"
           fi
           
-          if [[ '' != ${{ vars.PSH_SOP_UPDATE_BRANCH }} ]]; then
-            export PSH_SOP_UPDATE_BRANCH="${{ vars.PSH_SOP_UPDATE_BRANCH }}"
-          fi
-          
           printf "Beginning Source Operations toolkit install...\n"
 
           curl -fsS https://raw.githubusercontent.com/platformsh/source-operations/main/setup.sh | { bash /dev/fd/3 trigger-sopupdate; } 3<&0
