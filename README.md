@@ -4,6 +4,8 @@ GitHub action that runs the source operations toolkit to run an auto-update sour
 ## Inputs
 * `github-token` - Github [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) with access rights to the target repository so we can work with the github api. **REQUIRED**.
 * `platformsh_token` - A Platform.sh API Token. **REQUIRED**
+* `update_branch_name` - The branch name the toolkit should target for running the update. _Optional_. Defaults to `''` 
+which causes the toolkit to use the default branch name of `update`
 
 
 ## Example usage:

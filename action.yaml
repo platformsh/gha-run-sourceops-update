@@ -7,6 +7,10 @@ inputs:
   platformsh_token:
     description: 'Platform.sh API Token. Needed to trigger the source operation.'
     required: true
+  update_branch_name:
+    description: 'Name of the branch where you want to run the updates. Defaults to "update"'
+    required: false
+    default: ''
 
 #env:
 #  PLATFORMSH_CLI_TOKEN: ${{ secrets.TEMPLATES_CLI_TOKEN }}
@@ -54,6 +58,11 @@ runs:
           if [[ "${PATH}" != *".platformsh"* ]]; then
             echo "psh installer not in PATH"
             export PATH="${HOME}/.platformsh/bin:${PATH}"
+          fi
+          
+          if [[ '' != "${{ inputs.update_branch_name }}" ]]; then
+            echo "Alternate update branch name requested. Changing..."
+            export PSH_SOP_UPDATE_BRANCH="${{ inputs.update_branch_name }}"
           fi
           
           printf "Beginning Source Operations toolkit install...\n"
